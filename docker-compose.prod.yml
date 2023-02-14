@@ -1,0 +1,71 @@
+version: "3"
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    command: gunicorn hadiths_api.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - static_volume:/home/app/api/staticfiles
+      - media_volume:/home/app/api/mediafiles
+    expose:
+      - 8000
+    env_file:
+      - ./.env.prod
+    depends_on:
+      - db
+    restart: unless-stopped
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    volumes:
+      - react_build:/app/build
+
+  db:
+    image: postgres:12.13-alpine3.17
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.prod.db
+    restart: unless-stopped
+  proxy:
+    build:
+      context: ./docker/proxy
+    restart: always
+    volumes:
+      - react_build:/usr/share/nginx/html
+      - static_volume:/home/app/api/staticfiles
+      - media_volume:/home/app/api/mediafiles
+      - certbot-web:/vol/www
+      - proxy-dhparams:/vol/proxy
+      - certbot-certs:/etc/letsencrypt
+    ports:
+      - 80:80
+      - 443:443
+    env_file:
+      - ./.env.prod
+    depends_on:
+      - api
+      - web
+  certbot:
+    build:
+      context: ./docker/certbot
+    command: echo "Skipping..."
+    env_file:
+      - ./.env.prod
+    volumes:
+      - certbot-web:/vol/www
+      - certbot-certs:/etc/letsencrypt/
+    depends_on:
+      - proxy
+
+volumes:
+  postgres_data:
+  react_build:
+  static_volume:
+  media_volume:
+  certbot-web:
+  proxy-dhparams:
+  certbot-certs:

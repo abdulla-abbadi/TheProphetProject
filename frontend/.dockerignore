@@ -1,0 +1,5 @@
+/prophet/node_modules/
+npm-debug.log
+.git
+*.md
+.gitignore

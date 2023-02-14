@@ -1,0 +1,9 @@
+# build-stage 
+FROM node:alpine
+WORKDIR /app
+COPY ./prophet/package.json /app
+COPY ./prophet/package-lock.json /app
+RUN npm install 
+COPY ./prophet/ .
+ENV REACT_APP_API_URL=127.0.0.1
+RUN npm run build 
